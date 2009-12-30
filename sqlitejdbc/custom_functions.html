@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>Custom Functions</title>
+  <link rel="stylesheet" type="text/css" href="../zentus.css" />
+</head>
+<body>
+<h1>Custom Functions</h1>
+<p>SQLiteJDBC provides a custom interface for creating custom functions accessible inside SQLite, written in Java.</p>
+<p>All you have to do is subclass <a href="/sqlitejdbc/api/org/sqlite/Function.html">org.sqlite.Function</a> and implement <tt>xFunc()</tt>. Pass the new instance to Function.create() and SQLite is ready to call it.</p>
+<p><a href="/sqlitejdbc/api/">JavaDoc</a></p>
+</p>
+<h2>Basic Example</h2>
+<pre>
+import java.sql.*;
+import org.sqlite.Function;
+
+public class Test {
+    public static void main(String[] args) {
+        Class.forName("org.sqlite.JDBC");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:");
+
+        Function.create(conn, "myFunc", new Function() {
+            protected void xFunc() throws SQLException {
+                System.out.println("myFunc called!");
+            }
+        });
+
+        conn.createStatement().execute("select myFunc();");
+        conn.close();
+    }
+}</pre>
+<h2>Aggregate Functions</h2>
+<p>By subclassing <a href="/sqlitejdbc/api/org/sqlite/Function.Aggregate.html">Function.Aggregate</a> and implementing <tt>xStep()</tt> and <tt>xFinal()</tt> you can create an aggregate function. E.g.</p>
+<pre>
+Class.forName("org.sqlite.JDBC");
+Connection conn = DriverManager.getConnection("jdbc:sqlite:");
+
+Function.create(conn, "mySum", new Function.Aggregate() {
+    private int sum = 0;
+    protected void xStep() throws SQLException {
+        sum += value_int(0);
+    }
+    protected void xFinal() throws SQLException {
+        result(sum);
+    }
+});
+
+Statement stat = conn.createStatement();
+stat.executeUpdate("create table t1 (c1);");
+stat.executeUpdate("insert into t1 values (2);");
+stat.executeUpdate("insert into t1 values (4);");
+stat.executeUpdate("insert into t1 values (3);");
+ResultSet rs = stat.executeQuery("select mySum(c1) from t1;");
+rs.next();
+System.out.println("mySum = " + rs.getInt(1));</pre>
+<p>Prints <tt>mySum = 9</tt>. It is safe to use internal variables as every time an aggregate function is called it is <tt>clone()</tt>ed to ensure thread safety.</p>
+<h2>Triggers</h2>
+<p>The most interesting use of custom functions are making SQLite triggers. This way your Java application can be informed of changes in your tables.</p>
+<pre>
+import java.sql.*;
+import org.sqlite.Function;
+
+public class Test {
+    public static void main(String[] args) {
+        Class.forName("org.sqlite.JDBC");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:");
+
+        Function.create(conn, "myFunc", new Function() {
+            protected void xFunc() {
+                System.out.println("database updated");
+            }
+        });
+
+        Statement stat = conn.createStatement();
+        stat.executeUpdate("create table table1 (col1, col2);");
+        stat.executeUpdate(
+            "create trigger trig1 after insert on table1 begin" +
+            "    select callTrig();" +
+            "end;"
+        );
+
+        stat.executeUpdate("insert into table1 values (1, 2);");
+        conn.close();
+    }
+}</pre>
+<h2>Arguments and Results</h2>
+<p>The protected functions <tt>value_&lt;type>(int)</tt>, <tt>result(&lt;type>)</tt> of org.sqlite.Function provide access to arguments and the ability to return a value.</p>
+<pre>
+Function.create(conn, "mySum", new Function() {
+    protected void xFunc() throws SQLException {
+        int s = 0;
+        for (int i=0; i < arg(); i++)
+            s += value_int(i);
+        result(s);
+    }
+});
+
+ResultSet rs = conn.createStatement().execute(
+    "select mySum(1, 3, 5);");
+rs.next();
+
+System.out.println(rs.getInt(1));</pre>
+<p>Prints <tt>9</tt>.</p>
+</body>
+</html>

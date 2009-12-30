@@ -1,0 +1,65 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" type="text/css" href="/content.css" />
+    <title>rhost-check - qmail check for bad reverse dns</title>
+</head>
+<body>
+<div class="ad">
+<script type="text/javascript"><!--
+google_ad_client = "pub-3074710994457921";
+google_ad_width = 120;
+google_ad_height = 240;
+google_ad_format = "120x240_as";
+google_ad_type = "text";
+google_ad_channel ="";
+//--></script>
+<script type="text/javascript"
+  src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+</div>
+
+
+
+<div class="content">
+<h1>rhost-check</h1>
+
+<p class="item"><a href="index.html">&#60;- Index</a></p>
+
+<table border="0">
+<tr><td><b>Version:</b></td> <td>1</td></tr>
+<tr><td><b>Download:</b></td> <td><a href="rhost-check.c">rhost-check.c</a></td></tr>
+<tr><td><b>Compile:</b></td> <td><tt>gcc -O -o rhost-check rhost-check.c</tt></td></tr>
+<tr><td><b>Usage:</b></td> <td><tt>tcpserver -R -h -p 0 smtp rhost-check rblsmtpd qmail-smtpd 2>&1</tt></td></tr>
+</table>
+
+<h2>Description</h2>
+<p>
+<tt>rhost-check</tt> is an incredibly simple
+<a href="http://cr.yp.to/ucspi-tcp/tcpserver.html">tcpserver</a>-style
+program that checks if the environment variable <tt>TCPREMOTEHOST</tt>
+is set, and if so sets <tt>RBLSMTPD</tt> to <tt>bad reverse DNS</tt>.
+</p>
+
+<p>
+This is useful to you if you use tcpserver (with <tt>-h -p</tt>) to
+run <tt>qmail-smtpd</tt> with <tt>rblsmtpd</tt> and want to block
+SMTP servers that don't have a valid reverse DNS name.
+</p>
+
+<p><b>NOTE:</b> This <i>must</i> be chained to <tt>rblsmtpd</tt> to
+sucessfully block messages.</p>
+
+<h2>License</h2>
+<p>
+All code on this site is released under a
+<a href="bsd.html">BSD-style</a> license.
+</p>
+
+</div>
+<p class="sig">2004-09-10</p>
+
+</body>
+</html>

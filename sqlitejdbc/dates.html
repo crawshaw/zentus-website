@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+  <title>Date and Time</title>
+  <link rel="stylesheet" type="text/css" href="../zentus.css" />
+</head>
+<body>
+<h1>Date and Time</h1>
+
+<p>
+SQLiteJDBC implements ResultSet getDate() / getTime() and
+PreparedStatement setDate() / setTime() in the only efficient way the
+JDBC spec allows for, which is storing the time as a 64-bit long of
+milliseconds since UTC.
+</p>
+
+<p>
+This does not conflict with the SQLite standard format as long as care
+is taken to transform the unix timestamp into what SQLite functions
+use, either at the point where the date is stored or when using it
+elsewhere in SQLite. For example:
+</p>
+
+<pre>
+prep = conn.prepareStatement("insert into test values (?);");
+prep.setDate(1, new Date(1000));
+prep.executeUpdate();
+
+rs = stat.executeQuery("select * from test;");
+rs.getString(1) == "1000";
+</pre>
+
+<p>
+In the above example the date is being stored as a unix timestamp. To
+store the date in the standard SQLite format, transform it with the
+datetime() and strftime() functions:
+</p>
+
+<pre>
+prep = conn.prepareStatement(
+  "insert into test values datetime(? / 1000, 'unixepoch');");
+prep.setDate(1, new Date(1092941466000));
+prep.executeUpdate();
+
+rs = stat.executeQuery("select * from test;");
+assert(rs.getString(1).equals("2004-08-10 18:51:06"));
+
+rs = stat.executeQuery("select strftime('%s', col1) * 1000 from test;");
+assert(rs.getDate(1).equals(new Date(987654321)));
+</pre>
+
+</body>
+</html>

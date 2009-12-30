@@ -1,0 +1,46 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>David Crawshaw</title>
+  <link rel="stylesheet" type="text/css" href="zentus.css">
+</head>
+<body>
+
+<h1>Shell tricks I can never remember</h1>
+
+<p>Recursive grep that works:</p>
+<pre>find . -type f -exec grep "mysearch" /dev/null {} \;</pre>
+
+<p>Too many files:</p>
+<pre>for i in `ls`; do rm $i; done</pre>
+
+<p>Split string:</p>
+<pre>
+#!/bin/sh
+
+IFS=:
+for dir in $PATH; do
+  if [ -x $dir/gcc ];then
+    GCC=$dir/gcc;
+    break;
+  fi
+done
+</pre>
+
+<p>Find and replace in multiple files:</p>
+<pre>perl -pi -e "s/find/replace/g" file1 file2 ...</pre>
+
+<p>Cool prompt</p>
+<pre>
+# cool prompt
+if type -p printf > /dev/null 2>&1; then
+  red=$(printf '\e[31m')
+  colors="\[\e[0;36m\]\w\[\e[01m\]\[\e[0m\]"
+  export PS1="${NAME}:${colors}$([ $? -eq 0 ]||printf $red)\$\[\e[0m\] "
+else
+  export PS1='\[\e[0;36m\]\w\[\e[01m\]\[\e[0m\]\$\[\e[0m\] \$'
+fi
+</pre>
+
+</body>
+</html>
