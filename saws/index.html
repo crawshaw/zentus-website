@@ -1,0 +1,109 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>SAWS - Amazon S3, SimpleDB, and SQS for Scala</title>
+  <link rel="stylesheet" type="text/css" href="../zentus.css">
+</head>
+<body>
+
+<h1>SAWS - S3, SimpleDB, SQS for Scala</h1>
+
+<p class="Warning">
+Warning: This code is very new, Dec 2009. The only current user is
+<a href="http://estful.com/">Estful</a>. Consider it buggy and incomplete.
+</p>
+
+<p>This is a very simple Scala library for working with Amazon's
+<a href="http://aws.amazon.com/s3/">S3</a>,
+<a href="http://aws.amazon.com/simpledb/">SimpleDB</a>, and
+<a href="http://aws.amazon.com/sqs/">SQS</a>.
+</p>
+
+<p>
+It really is simple. <b>There are five source files and zero
+dependencies.</b> Everything is done with the HTTP client in the
+<tt>java.net</tt> package. The objects have <tt>+=</tt> and
+<tt>-=</tt> and look a bit like Scala collections.
+</p>
+
+<p>
+You probably want to start with the examples below and the
+<a href="/saws/index-javadoc.html">JavaDoc overview</a>. But don't
+stop there. The <a href="http://github.com/crawshaw/saws">source code</a>
+is designed to be simple, so you can read it and modify it as you need.
+</p>
+
+<h2>S3 Example</h2>
+
+<pre>
+val s3 = new com.zentus.s3.S3(awsKeyId, awsSecretKey)
+s3 += "mybucket.example.com"                      // Create a bucket
+val mybucket = s3("mybucket.example.com")         // Open a bucket
+mybucket += ("myfile", "hello, this is my file")  // Create an entry
+val myfile = mybucket("myfile")                   // Get an item reference
+Console.println(myfile.mkString)                  // Print file
+mybucket -= "myfile"                              // Delete entry
+</pre>
+
+<p>
+There are extra parameters available for setting mime type and access
+control. More work is needed providing other header controls, such as
+cache settings.
+</p>
+
+<h2>SimpleDB Example</h2>
+
+<pre>
+val db = new com.zentus.simpledb.SimpleDB(awsKeyId, awsSecretKey)
+db += "mydomain"                                  // Create a domain
+val dom = db("mydomain")                          // Open a domain
+dom += ("myentry", Map(
+  "firstname" -> "David",
+  "surname"   -> "Crawshaw
+))                                                // Create an entry
+val entry = mydom("myentry")                      // Get entry (normal Map)
+val name = myentry("firstname")                   // Get attribute
+val res = db.select("""select * from mydomain
+  where firstname='David'""")                     // Run query
+Console.println("result: " + res)
+dom -= ("myentry", List("firstname", "surname"))  // Remove attributes
+</pre>
+
+<p>
+Some int/double encoding routines are provided to lexographically order
+the values for querying. <b>Be careful:</b> they presently have an
+arbitrary offset value of 100,000 which will might change in the
+future. That means these interfaces are dangerous and incompatible with
+other SimpleDB libraries.
+</p>
+
+<h2>SQS Example</h2>
+
+<p>Coming soon, the code needs some work.</p>
+
+<h2>License</h2>
+
+<p>
+The source is published under the
+<a href="http://en.wikipedia.org/wiki/ISC_license">ISC license</a>.
+Liberal like the BSD license, it too is simple. The entire license
+sits at the top of each source file. You can't remove the text of the
+license: that's about the only restriction. If you have any more questions,
+I suggest reading it.
+</p>
+
+
+<script type="text/javascript"><!--
+var gaJsHost = (("https:" == document.location.protocol) ?
+    "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost
+    + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+--></script><script src="index_files/ga.js" type="text/javascript"></script>
+<script type="text/javascript"><!--
+var pageTracker = _gat._getTracker("UA-2989140-1");
+pageTracker._initData();
+pageTracker._trackPageview();
+--></script>
+
+</body>
+</html>
