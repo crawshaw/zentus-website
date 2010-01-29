@@ -1,20 +1,19 @@
 body {
   line-height: 1.5;
-  color: #333333;
-  font-family: "Lucida Grande", Geneva, Arial, Verdana, sans-serif;
-  font-size: 12px;
+  color: #222;
   width: 40em;
   margin: 0 auto;
+  font-family: 'Times New Roman', 'Times', serif;
 }
 
 h1, h2, h3, h4 {
-  font-family: 'Trebuchet MS', arial, verdana, sans-serif;
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
   text-shadow: lightgray 1px 1px 2px;
   width: 100%
 }
-h1 { font-size: 20pt; border-top: silver 1px solid; }
-h2 { font-size: 16pt; border-top: silver 1px solid; }
-h3 { font-size: 12pt; }
+h1 { font-size: 30px; border-top: silver 1px solid; }
+h2 { font-size: 24px; }
+h3 { font-size: 20px; }
 
 pre {
   border: 1px dotted #6666aa;
@@ -30,6 +29,9 @@ blockquote {
   border: 1px #e6ddcb solid;
   background-color: #fbf2ef;
 }
+
+a { text-decoration: none;  }
+a:hover { text-decoration: underline; }
 
 .Warning {
   border: 1px solid red;
