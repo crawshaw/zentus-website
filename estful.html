@@ -1,0 +1,196 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>David Crawshaw</title>
+  <link rel="stylesheet" type="text/css" href="zentus.css">
+</head>
+<body>
+
+<h1>Building <a href="http://estful.com">Estful</a></h1>
+
+<p class="Warning">This story is an unfinished draft.</p>
+
+<p>I built <a href="http://estful.com">Estful</a>, a site for sharing
+recipes and talking about food, for three reasons:</p>
+
+<ol>
+  <li>There were no photo-oriented recipe sites.</li>
+  <li>I wanted a significant project with which to learn
+    <a href="http://www.scala-lang.org">Scala</a>, experiment with
+    server design techniques, and trial Amazon's
+    <a href="http://aws.amazon.com/ec2/">EC2</a> /
+    <a href="http://aws.amazon.com/s3/">S3</a> /
+    <a href="http://aws.amazon.com/simpledb/">SimpleDB</a>.
+  </li>
+  <li>I had a long bus commute and I was out of books.</li>
+</ol>
+
+<p>
+As a hobby project, this was a great success on all three fronts (though I
+did get some strange looks programming on a public bus).
+</p>
+
+<p style="text-align: center;">
+  <a href="http://estful.com"><img src="estful-frontpage.png" /></a></p>
+
+<h2>The basics</h2>
+
+<p>
+The web server is Jetty, sitting on an Amazon EC2 instance. It is
+implemented without frameworks, without a templating library, in
+simple direct servlets. Scala's XML literal syntax provides the
+equivalent to templating:
+</p>
+
+<code><pre>
+class Frontpage extends HttpServlet {
+  def frontPage() = {
+    val body = ...
+    &lt;html>
+      &lt;head>
+        &lt;title>The front page!&lt;/title>
+        { Snippits.headers }
+      &lt;/head>
+      &lt;body>
+        { body }
+      &lt;/body>
+    &lt;/html>
+  }
+
+  override def doGet(req: HttpServletRequest, res: HttpServletResponse) = {
+    res.setContentType("text/html")
+    val out = new PrintWriter(res.getOutputStream)
+    out.println("&lt;!DOCTYPE html>")
+    out.println(xml.Xhtml.toXhtml(frontPage, true, false))
+    out.close
+  }
+}
+</pre></code>
+
+<p>
+This is where the server started, but even after adding support for
+headers such as <tt>Last-Modified</tt> and <tt>ETag</tt>, and request
+caching to minimise calls to SimpleDB, the <tt>doGet()</tt> machinery
+is less than 50 lines long.
+</p>
+
+<p>
+From here I found the programming of the site was largely dictated by
+a few key technical decisions made early on, so I will start with those.
+</p>
+
+<h2>The server is stateless.</h2>
+
+<p>
+The server maintains no inter-request state in memory or on disk. Each
+request looks up any relevant user session or mutable site data in SimpleDB
+and S3.
+</p>
+
+<p>
+Of course, this sounds slow. And when you first set it up, it is slow. Every
+HTTP request to Estful involves a couple of HTTP requests be sent to the
+SimpleDB and S3 entry points, and they must return before the client sees
+a page.
+</p>
+
+<p>
+This means when you are the only user, page generation time is measured
+in milliseconds. Set up a MySQL database and a PHP web site with a connection
+pool and page generation time for a single user will be well under a
+millisecond. So why go to the trouble of building a stateless server? Because
+when you are not the only user, when you are one of thousands, page generation
+time is still measured in milliseconds.
+</p>
+
+<p>
+Both SimpleDB and S3 are designed so you can increase the number of requests
+from different machines without increasing average response time. With a
+stateless server, it is trivial to run multiple web servers and load balance
+even using simple DNS round-robin.
+</p>
+
+<p style="text-align: center;"><img src="estful-servers.png" /></p>
+
+<p>
+All the issues of communicating between
+servers are handled by Amazon's eventual consistency, assuming your site
+is designed to the next principle:
+</p>
+
+<h2>The database is append only.</h2>
+
+<p>
+When someone writes a new article, it gets a new id, and the text and images
+are stored under new revision ids. When the article is edited, the next text
+is saved to a new revision. To display the article, find the newest revision
+(some overwriting is done for pointing to the newest version of data, for
+speed). 
+</p>
+
+<p>
+By simply appending changes to the database with a timestamp and random ids, 
+there is no data loss by collision. The only place this is not true is
+usernames, where I chose to use the actual username given by the user as an
+identifier, instead of generating a random id. This means user creation must
+be synchronized outside of SimpleDB to avoid overwriting, as eventual
+consistency offers no locking. In reterospect, this was probably a mistake.
+Users could also be append only if I had give them random ids.
+</p>
+
+<h2>All HTML pages are exactly the same for every user.</h2>
+
+<p>
+Most requests come from people not logged in, viewing the site through
+the same lens. Some users are logged in and need extra information on
+a page, like what articles and comments they have voted on. To manage to
+both keep the server design simple and do page caching, my solution for
+now is make logged in users make two HTTP requests. The first pulls down
+the page, and the second, via JavaScript and XHR, requests extra
+information in a JSON format and rearranges the page to match.
+</p>
+
+<p>
+At the cost of another request for the minority of users, we get to
+take easy advantage of the <tt>Last-Modified</tt>, <tt>ETag</tt>, and
+cache headers. We can also <b>reduce calls to SimpleDB and S3</b>: when the
+server constructs a page to send, it keeps a webserver-local copy with
+the last-modified date. If another request comes in, it can just check
+the last-modified date against SimpleDB, or if little-enough time has
+passed, not even bother and serve the page straight out. This brings
+up performance by reducing database calls.
+</p>
+
+<h2>Find someone with better infastructure to host static content.</h2>
+
+<p>
+S3 is not just used to store text too large to fit in SimpleDB, it also
+stores all the recipe photos. Instead of serving those out from my own
+server, I just make them public and serve them directly from S3. This
+let's the server get on with what it's good at: managing text.
+</p>
+
+<p>
+It also means if the site becomes busy enough, the photos can be served
+by CloudFront to improve response times for end user.
+</p>
+
+<hr />
+
+<p>By <a href="http://zentus.com">David Crawshaw</a>, February 2010.</p>
+
+<script type="text/javascript"><!--
+var gaJsHost = (("https:" == document.location.protocol) ?
+    "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost
+    + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+--></script><script src="index_files/ga.js" type="text/javascript"></script>
+<script type="text/javascript"><!--
+var pageTracker = _gat._getTracker("UA-2989140-1");
+pageTracker._initData();
+pageTracker._trackPageview();
+--></script>
+
+</body>
+</html>
+
